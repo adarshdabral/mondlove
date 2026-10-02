@@ -12,6 +12,7 @@ import { useCouple } from '@/components/AppShell'
 import { Avatar } from '@/components/Avatar'
 import { Button, Card, Chip, Eyebrow, Pill, Sheet, VenueArt } from '@/components/ui'
 import { ErrorState, PageLoader, SafetySheet } from '@/components/shared'
+import { KnowBeforeYouGo } from '@/components/VenueDetails'
 
 function downloadIcs(b: Booking) {
   const start = new Date(b.startsAt)
@@ -187,13 +188,17 @@ function BookingView() {
       <div className="grid gap-6 lg:grid-cols-[1.2fr_1fr]">
         <div className="space-y-4">
           <div className="overflow-hidden rounded-[28px] border border-line bg-white shadow-card">
-            {b.venue && <VenueArt emoji={b.venue.emoji} tone={b.venue.tone} className="h-40" size="lg" />}
+            {b.venue?.cover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={b.venue.cover} alt={b.venue.name} className="h-40 w-full object-cover" />
+            ) : b.venue && <VenueArt emoji={b.venue.emoji} tone={b.venue.tone} className="h-40" size="lg" />}
             <div className="p-6">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <Pill tone={b.status === 'cancelled' ? 'red' : b.status === 'completed' ? 'sand' : 'sage'}>{b.status[0].toUpperCase() + b.status.slice(1)}</Pill>
                   <h1 className="mt-2 font-display text-[28px] leading-tight">{b.title}</h1>
                   <div className="mt-1 flex items-center gap-1 text-sm text-ink-soft"><MapPin size={14} /> {b.venue?.name}, {b.venue?.area}</div>
+                  {b.venue?.address && <div className="mt-0.5 text-[12px] text-muted">{b.venue.address}{b.venue.landmark ? ` · ${b.venue.landmark}` : ''}</div>}
                 </div>
                 {other && <Link href={`/app/people/${other.id}`} className="flex items-center gap-2 rounded-full bg-sand py-1 pl-1 pr-3 text-sm font-semibold"><Avatar config={other.avatar} size={30} /> {other.name}</Link>}
               </div>
@@ -229,7 +234,7 @@ function BookingView() {
                       <div className="flex justify-between"><span>{b.experience?.name}</span><span>{inr(b.price)}</span></div>
                       {b.gift && <div className="flex justify-between"><span>{b.gift.label}</span><span>{inr(b.gift.price)}</span></div>}
                       <div className="flex justify-between"><span>Mingleo booking fee</span><span className="text-sage">₹0</span></div>
-                      <div className="pt-1 text-[11px] text-muted">Only you can see this. Free cancellation up to 24 hours before.</div>
+                      <div className="pt-1 text-[11px] text-muted">Only you can see this.{b.venue?.policies?.cancellation ? ` Cancellation: ${b.venue.policies.cancellation.toLowerCase()}.` : ''}</div>
                     </div>
                   )}
                 </>
@@ -243,9 +248,21 @@ function BookingView() {
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-2">
-            <Button variant="outline" icon={<Navigation size={15} />} onClick={() => window.open(`https://www.google.com/maps/search/${encodeURIComponent(`${b.venue?.name} ${b.venue?.area} Dehradun`)}`, '_blank', 'noopener')}>Directions</Button>
+            <Button variant="outline" icon={<Navigation size={15} />} onClick={() => window.open(b.venue?.mapsUrl || `https://www.google.com/maps/search/${encodeURIComponent(`${b.venue?.name} ${b.venue?.address || b.venue?.area} Dehradun`)}`, '_blank', 'noopener')}>Directions</Button>
             <Button variant="outline" icon={<CalendarPlus size={15} />} onClick={() => { downloadIcs(b); toast('Calendar file downloaded') }}>Add to calendar</Button>
           </div>
+          {b.venue && (b.venue.phone || b.venue.policies?.cancellation || Object.keys(b.venue.goodToKnow ?? {}).length > 0) && (
+            <Card className="p-5">
+              <div className="font-display text-lg">Know before you go</div>
+              <div className="mt-2 space-y-1.5 text-[13px] text-ink-soft">
+                {b.venue.phone && <div>Venue phone: <a href={`tel:${b.venue.phone.replace(/\s/g, '')}`} className="font-semibold text-ember">{b.venue.phone}</a></div>}
+                {b.venue.policies?.lateArrival && <div>Running late? {b.venue.policies.lateArrival}.</div>}
+                {b.venue.policies?.cancellation && <div>Cancellation: {b.venue.policies.cancellation.toLowerCase()}.</div>}
+                {b.venue.policies?.houseRules && <div>{b.venue.policies.houseRules}</div>}
+              </div>
+              <div className="mt-3"><KnowBeforeYouGo venue={b.venue} /></div>
+            </Card>
+          )}
           <Card className="p-5">
             <div className="flex items-center gap-2 font-semibold"><ShieldCheck size={18} className="text-sage" /> Safety tools</div>
             <p className="mt-1 text-[13px] text-muted">Public, verified venue. {user!.trustedContact ? `Check in with ${user!.trustedContact.name} in one tap.` : 'Add a trusted contact in your profile for one-tap check-ins.'}</p>

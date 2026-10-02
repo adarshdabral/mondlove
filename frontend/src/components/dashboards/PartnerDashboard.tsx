@@ -1,6 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import Link from 'next/link'
+import { ImageIcon } from 'lucide-react'
+import { VenueDetails } from '../VenueDetails'
+import type { Package as VenuePackage, Venue } from '../../lib/types'
 import {
   BarChart3, CalendarCheck, CalendarClock, CheckCircle2, Crown, IndianRupee, LayoutDashboard, Megaphone,
   Package as PackageIcon, Plus, Settings, Star, Tag, Trash2, TrendingUp, Users, Minus,
@@ -36,7 +40,7 @@ const SOURCE_LABELS: Record<string, string> = { date: 'Date proposals', lab: 'Da
 
 /** Shape of GET /api/partner/dashboard. */
 export interface PartnerLive {
-  venue: { id: string; status: 'pending' | 'verified' | 'suspended'; kind: 'cafe' | 'restaurant' | 'activity'; name: string; area: string; category: string; plan: string; featured: boolean; rating: number; reviews: number; commissionRate: number; availability: Record<string, number>; slots: string[] }
+  venue: { id: string; status: 'draft' | 'pending' | 'verified' | 'suspended'; kind: 'cafe' | 'restaurant' | 'activity'; name: string; area: string; category: string; plan: string; featured: boolean; rating: number; reviews: number; commissionRate: number; availability: Record<string, number>; slots: string[] }
   reviews: { average: number | null; count: number; tags: { tag: string; pct: number }[]; recent: { rating: number; tags: string[]; experience: string; when: string; guest: string }[] }
   kpis: { bookings30d: number; gross30d: number; upcoming7d: number; rating: number }
   payout: { gross: number; commission: number; giftShare: number; net: number }
@@ -94,6 +98,7 @@ export function PartnerDashboard({ initial }: { initial: PartnerLive }) {
         { id: 'availability', label: 'Availability', icon: CalendarClock },
         { id: 'reviews', label: 'Reviews', icon: Star },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'listing', label: 'Listing', icon: ImageIcon },
         { id: 'profile', label: 'Profile', icon: Settings },
       ]
     : [
@@ -104,6 +109,7 @@ export function PartnerDashboard({ initial }: { initial: PartnerLive }) {
         { id: 'pricing', label: 'Pricing', icon: Tag },
         { id: 'reviews', label: 'Reviews', icon: Star },
         { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'listing', label: 'Listing', icon: ImageIcon },
         { id: 'profile', label: 'Profile', icon: Settings },
       ]
 
@@ -152,6 +158,7 @@ export function PartnerDashboard({ initial }: { initial: PartnerLive }) {
       subtitle={`${live.venue.area} · ${live.venue.category} · ${Math.round(live.venue.commissionRate * 100)}% commission`}
       badge={live.venue.status !== 'verified' ? <Pill tone="gold">Pending verification</Pill> : live.venue.plan === 'pro' ? <Pill tone="gold"><Crown size={11} /> Partner Pro</Pill> : undefined}
       onLogout={logout}
+      logoutTo="/partners/login"
       nav={nav}
       active={tab}
       onNav={setTab}
@@ -358,6 +365,8 @@ export function PartnerDashboard({ initial }: { initial: PartnerLive }) {
         </div>
       )}
 
+      {tab === 'listing' && <ListingTab />}
+
       {tab === 'profile' && (
         <div className="grid gap-5 animate-fade-in xl:grid-cols-2">
           <Panel title="Venue">
@@ -452,5 +461,35 @@ function CreatePackage({ open, onClose, onSave, kind }: { open: boolean; onClose
         <Button disabled={!name || !items.length} onClick={() => onSave({ id: Math.random().toString(36), name, includes: items, price, days, capacity: cap, active: true, sold: 0, emoji: kind === 'cafe' ? '☕' : '🏺' })}>Publish package</Button>
       </div>
     </Modal>
+  )
+}
+
+/** What guests see, straight from the saved listing, with a way back into the wizard. */
+function ListingTab() {
+  const [data, setData] = useState<{ venue: Venue & { status: string }; packages: VenuePackage[]; missing: string[] } | null>(null)
+  useEffect(() => {
+    api<{ venue: Venue & { status: string }; packages: VenuePackage[]; missing: string[] }>('/partner/venue').then(setData).catch(() => {})
+  }, [])
+  if (!data) return <Panel><p className="text-sm text-muted">Loading your listing…</p></Panel>
+  const v = { ...data.venue, packages: data.packages, rating: 0, reviews: 0, verified: data.venue.status === 'verified', emoji: '☕', tone: ['#FBEFD3', '#D9A23B'] as [string, string] }
+  return (
+    <div className="grid gap-5 animate-fade-in xl:grid-cols-[1fr_320px]">
+      <Panel title="What guests see before booking">
+        <VenueDetails venue={v} />
+      </Panel>
+      <div className="space-y-4">
+        <Panel title="Listing">
+          <div className="space-y-2 text-[14px]">
+            <div className="flex justify-between"><span className="text-muted">Photos</span><span className="font-semibold">{v.photos?.length ?? 0}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Menu items</span><span className="font-semibold">{v.treats.length}</span></div>
+            <div className="flex justify-between"><span className="text-muted">With photos</span><span className="font-semibold">{v.treats.filter((t) => t.photo).length}</span></div>
+            <div className="flex justify-between"><span className="text-muted">Packages</span><span className="font-semibold">{data.packages.length}</span></div>
+          </div>
+          {data.missing.length > 0 && <p className="mt-3 rounded-2xl bg-gold-soft p-3 text-[12px]">Still missing: {data.missing.join(', ')}</p>}
+          <Link href="/partner/setup" className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">Edit listing</Link>
+        </Panel>
+        <p className="px-1 text-[12px] text-muted">Tip: 5 or more photos, and a photo on every menu item, help people picture the date and choose your venue.</p>
+      </div>
+    </div>
   )
 }

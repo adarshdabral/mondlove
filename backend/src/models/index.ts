@@ -4,7 +4,11 @@ import { Schema, model, type InferSchemaType, type Types } from 'mongoose'
 /* Shared sub-documents                                               */
 /* ------------------------------------------------------------------ */
 
-const TreatSchema = new Schema({ name: { type: String, required: true }, emoji: { type: String, required: true }, note: String }, { _id: false })
+// A menu item (or activity option). Doubles as a "Date Token" people pick for each other.
+const TreatSchema = new Schema(
+  { name: { type: String, required: true }, emoji: { type: String, required: true }, note: String, photo: String, price: Number, diet: { type: String, enum: ['veg', 'nonveg', 'egg'] } },
+  { _id: false },
+)
 const InterestSchema = new Schema({ emoji: { type: String, required: true }, label: { type: String, required: true } }, { _id: false })
 const LabelValueSchema = new Schema({ label: { type: String, required: true }, value: { type: String, required: true } }, { _id: false })
 const PromptSchema = new Schema({ q: String, a: String }, { _id: false })
@@ -105,7 +109,7 @@ const VenueSchema = new Schema(
     tags: { type: [String], default: [] },
     area: String,
     city: { type: String, default: 'Dehradun' },
-    location: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: { type: [Number], default: [77.5946, 12.9716] } },
+    location: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: { type: [Number], default: [78.0322, 30.3165] } }, // Dehradun
     distanceKm: Number,
     rating: { type: Number, default: 0 },
     reviews: { type: Number, default: 0 },
@@ -114,8 +118,22 @@ const VenueSchema = new Schema(
     ambience: { type: [String], default: [] },
     treats: { type: [TreatSchema], default: [] },
     slots: { type: [String], default: [] },
+    // Listing details people see before booking (see lib/venueInfo.ts for the allowed values).
+    description: String,
+    address: String,
+    landmark: String,
+    mapsUrl: String,
+    phone: String, // shared with guests only once they have a booking
+    priceForTwo: Number,
+    hours: { days: [String], open: String, close: String },
+    photos: { type: [new Schema({ url: { type: String, required: true }, caption: String }, { _id: false })], default: [] },
+    goodToKnow: { type: Schema.Types.Mixed, default: {} },
+    policies: { cancellation: String, lateArrival: String, houseRules: String },
+    licence: { fssai: String, gst: String }, // private: owner and admins only
+    submittedAt: Date,
     owner: { type: Schema.Types.ObjectId, ref: 'User', index: true },
-    status: { type: String, enum: ['pending', 'verified', 'suspended'], default: 'pending' },
+    // draft → (owner submits) → pending → (admin approves) → verified
+    status: { type: String, enum: ['draft', 'pending', 'verified', 'suspended'], default: 'draft' },
     documents: { type: [String], default: [] },
     commissionRate: { type: Number, default: 0.12 },
     plan: { type: String, enum: ['standard', 'pro'], default: 'standard' },
@@ -266,8 +284,9 @@ export const Revenue = model('Revenue', RevenueSchema)
 const MediaSchema = new Schema(
   {
     owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    kind: { type: String, enum: ['profile', 'memory'], required: true },
+    kind: { type: String, enum: ['profile', 'memory', 'venue', 'menu'], required: true },
     couple: { type: Schema.Types.ObjectId, ref: 'Couple' },
+    venue: { type: Schema.Types.ObjectId, ref: 'Venue' },
     contentType: { type: String, enum: ['image/jpeg', 'image/png', 'image/webp'], required: true },
     data: { type: Buffer, required: true, select: false },
     size: Number,

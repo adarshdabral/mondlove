@@ -4,7 +4,7 @@ import { pathToFileURL } from 'node:url'
 import { config, redactUri } from '../config.js'
 import { connectDb } from '../db.js'
 import { Block, Booking, Couple, Experience, Memory, Payment, Proposal, Report, Revenue, Slot, User, Venue } from '../models/index.js'
-import { ALL_INTERESTS, BGS, DATE_STYLES, FOODS, HAIR_COLORS, INTENTIONS, ME_AVATAR, PEOPLE, SEED_MEMORIES, SHIRTS, SKINS, TRAITS, VENUES, dayLabel } from './catalog.js'
+import { ALL_INTERESTS, BGS, DATE_STYLES, FOODS, HAIR_COLORS, INTENTIONS, ME_AVATAR, PEOPLE, SEED_MEMORIES, SHIRTS, SKINS, TRAITS, VENUES, VENUE_INFO, dayLabel } from './catalog.js'
 
 export const DEMO_PASSWORD = 'mingleo-demo'
 const demoEmail = (h: string) => `${h}@demo.mingleo.app`
@@ -180,7 +180,18 @@ export async function runSeed({ quiet = false } = {}) {
     const doc = await Venue.create({
       slug: v.id, name: v.name, kind: v.kind, category: v.category, tags: TAGS[v.id] ?? [], area: v.area, distanceKm: v.distanceKm,
       location: { type: 'Point', coordinates: [78.02 + i * 0.006, 30.31 + i * 0.005] }, // around Dehradun
-      rating: v.rating, reviews: v.reviews, emoji: v.emoji, tone: v.tone, ambience: v.ambience, treats: v.treats, slots: v.slots,
+      rating: v.rating, reviews: v.reviews, emoji: v.emoji, tone: v.tone, ambience: v.ambience, slots: v.slots,
+      // Listing details: what people need to know before booking.
+      ...(() => {
+        const info = VENUE_INFO[v.id]
+        if (!info) return { treats: v.treats }
+        return {
+          treats: v.treats.map((t) => ({ ...t, ...info.menu[t.name] })),
+          description: info.description, address: info.address, landmark: info.landmark, priceForTwo: info.priceForTwo, hours: info.hours,
+          goodToKnow: info.goodToKnow, policies: info.policies, licence: { fssai: info.fssai }, phone: '+91 135 274 ' + String(1000 + i * 37).slice(-4),
+          submittedAt: new Date(Date.now() - 90 * day),
+        }
+      })(),
       owner: owners[v.id], status: 'verified', city: 'Dehradun', documents: ['FSSAI / trade licence', 'GST'], commissionRate: 0.12,
       plan: ['pine-pour', 'clay-kiln', 'acoustic-room'].includes(v.id) ? 'pro' : 'standard', featured: v.id === 'skyline-terrace' || v.id === 'pine-pour',
     })
@@ -195,7 +206,15 @@ export async function runSeed({ quiet = false } = {}) {
     ['Peak Point Climbing', 'activity', 'Maldevta', ['Trade licence', 'Insurance'], owners['strike-zone']],
     ['Book & Bean', 'cafe', 'Dalanwala', ['FSSAI'], owners['lantern-house']],
   ] as const) {
-    await Venue.create({ slug: name.toLowerCase().replace(/[^a-z]+/g, '-'), name, kind, area, category: kind === 'cafe' ? 'Café' : 'Climbing', owner, status: 'pending', city: 'Dehradun', documents: [...docs], emoji: kind === 'cafe' ? '☕' : '🧗', tone: ['#FBEFD3', '#D9A23B'], slots: ['6:00 PM', '7:30 PM'] })
+    await Venue.create({
+      slug: name.toLowerCase().replace(/[^a-z]+/g, '-'), name, kind, area, category: kind === 'cafe' ? 'Café' : 'Climbing', owner, status: 'pending', city: 'Dehradun',
+      documents: [...docs], emoji: kind === 'cafe' ? '☕' : '🧗', tone: ['#FBEFD3', '#D9A23B'], slots: ['6:00 PM', '7:30 PM'], submittedAt: new Date(Date.now() - 2 * day),
+      description: kind === 'cafe' ? `A new café in ${area} with couple tables, good coffee and a quiet upstairs.` : 'Bouldering and top-rope walls with instructors. Beginners welcome.',
+      address: `${area}, Dehradun`, priceForTwo: kind === 'cafe' ? 400 : 1200, hours: { days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], open: '10:00 AM', close: '9:00 PM' },
+      goodToKnow: { food: kind === 'cafe' ? ['Pure veg'] : [], payment: ['UPI', 'Cash'], seating: ['Indoor'], vibe: 'Chatty' }, policies: { cancellation: 'Free until 3 hours before' },
+      treats: kind === 'cafe' ? [{ name: 'Filter Coffee', emoji: '☕', price: 80, diet: 'veg' }, { name: 'Cheese Toast', emoji: '🥪', price: 120, diet: 'veg' }] : [{ name: 'Intro Climb', emoji: '🧗', price: 600 }, { name: 'Top-rope Session', emoji: '🪢', price: 900 }],
+      licence: kind === 'cafe' ? { fssai: '12623001009' + String(Math.floor(r() * 900) + 100) } : {},
+    })
   }
 
   /* ---------- Booking history (last 30 days + next 10) ---------- */

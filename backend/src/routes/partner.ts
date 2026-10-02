@@ -1,8 +1,9 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import type { Types } from 'mongoose'
-import { Booking, Experience, Revenue, Venue } from '../models/index.js'
-import { forbidden, me, notFound, requireAuth, requireRole } from '../lib/http.js'
+import { Booking, Experience, Media, Revenue, Venue } from '../models/index.js'
+import { badRequest, conflict, forbidden, me, notFound, requireAuth, requireRole } from '../lib/http.js'
+import { MIN_MENU, MIN_PHOTOS, VENUE_OPTIONS, VenueListing, missingForSubmit } from '../lib/venueInfo.js'
 import { experienceDto } from '../lib/dto.js'
 import { partnerUpdateBooking } from '../services/booking.js'
 
@@ -15,12 +16,68 @@ partner.use(requireAuth, requireRole('partner', 'admin'))
 async function myVenue(req: any) {
   const user = me(req)
   const slug = typeof req.query.venue === 'string' ? req.query.venue : undefined
-  const v = await Venue.findOne(user.role === 'admin' && slug ? { slug } : { owner: user._id, ...(slug ? { slug } : {}) })
+  // Owners with several venues get their first one unless they ask for a specific slug.
+  const v = await Venue.findOne(user.role === 'admin' && slug ? { slug } : { owner: user._id, ...(slug ? { slug } : {}) }).sort({ createdAt: 1 })
   if (!v) throw notFound('No venue linked to this account')
   return v
 }
 
 const day = 864e5
+
+/* ---------------- Listing (registration wizard) ---------------- */
+
+async function listingDto(v: any) {
+  const packages = await Experience.find({ venue: v._id }).lean()
+  return {
+    venue: {
+      id: v.slug, status: v.status, kind: v.kind, name: v.name, category: v.category, area: v.area,
+      description: v.description ?? '', address: v.address ?? '', landmark: v.landmark ?? '', mapsUrl: v.mapsUrl ?? '', phone: v.phone ?? '',
+      priceForTwo: v.priceForTwo ?? null, ambience: v.ambience ?? [], hours: v.hours?.days?.length ? v.hours : null, slots: v.slots ?? [],
+      photos: v.photos ?? [], treats: v.treats ?? [], goodToKnow: v.goodToKnow ?? {}, policies: v.policies ?? {}, licence: v.licence ?? {},
+      submittedAt: v.submittedAt ?? null,
+    },
+    packages: packages.map(experienceDto),
+    missing: missingForSubmit(v, packages.filter((p) => p.active).length),
+    options: VENUE_OPTIONS,
+    limits: { minPhotos: MIN_PHOTOS, minMenu: MIN_MENU, maxPhotos: 12, maxMenu: 16 },
+  }
+}
+
+partner.get('/venue', async (req, res) => {
+  res.json(await listingDto(await myVenue(req)))
+})
+
+/** Saves any part of the listing. Photo URLs must be this owner's own uploads. */
+partner.patch('/venue', async (req, res) => {
+  const venue = await myVenue(req)
+  if (venue.status === 'suspended') throw forbidden('This venue is suspended. Contact partners@mingleo.app.')
+  const body = VenueListing.parse(req.body)
+  if (body.name && venue.status === 'verified' && body.name !== venue.name) throw conflict('Contact partners@mingleo.app to rename a verified venue')
+
+  const urls = [...(body.photos ?? []).map((p) => p.url), ...(body.treats ?? []).flatMap((t) => (t.photo ? [t.photo] : []))]
+  if (urls.length) {
+    const ids = [...new Set(urls.map((u) => u.split('/').pop()))]
+    const owned = await Media.countDocuments({ _id: { $in: ids }, owner: me(req)._id, kind: { $in: ['venue', 'menu'] } })
+    if (owned !== ids.length) throw badRequest('Some photos could not be found. Upload them again.')
+  }
+
+  Object.assign(venue, body)
+  if (body.goodToKnow) venue.markModified('goodToKnow')
+  await venue.save()
+  res.json(await listingDto(venue))
+})
+
+/** Draft → pending. An admin then reviews the listing and approves it. */
+partner.post('/venue/submit', async (req, res) => {
+  const venue = await myVenue(req)
+  if (venue.status !== 'draft') throw conflict(venue.status === 'pending' ? 'Your listing is already with our team' : 'This listing is already live')
+  const dto = await listingDto(venue)
+  if (dto.missing.length) return res.status(422).json({ error: 'Your listing is not complete yet', code: 'incomplete', missing: dto.missing })
+  venue.status = 'pending'
+  venue.submittedAt = new Date()
+  await venue.save()
+  res.json(await listingDto(venue))
+})
 const firstName = (n: string) => n.split(' ')[0]
 
 partner.get('/dashboard', async (req, res) => {

@@ -516,3 +516,133 @@ export const dayLabel = (d: Date) =>
 
 /** Bookable days used by tests: the five days starting a week from today. */
 export const DAYS = [7, 8, 9, 10, 11].map((n) => dayLabel(new Date(Date.now() + n * 864e5)))
+
+/* ---------- Listing details ("know before you go") for the seeded venues ---------- */
+
+export interface VenueInfo {
+  description: string
+  address: string
+  landmark: string
+  priceForTwo: number
+  hours: { days: string[]; open: string; close: string }
+  goodToKnow: {
+    food?: string[]; alcohol?: string; seating: string[]; vibe: string; payment: string[]; parking: string
+    accessibility: string[]; amenities: string[]; safety: string[]; studentDiscount?: number
+  }
+  policies: { cancellation: string; lateArrival: string; houseRules?: string }
+  /** Price and diet per menu item, by name. */
+  menu: Record<string, { price?: number; diet?: 'veg' | 'nonveg' | 'egg' }>
+  fssai?: string
+}
+
+const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+const SAFE = ['CCTV', 'Well-lit entrance', 'Staff briefed on Mingleo dates']
+
+export const VENUE_INFO: Record<string, VenueInfo> = {
+  'pine-pour': {
+    description: 'A two-floor specialty café with a deck that looks out at the Mussoorie hills. Quiet corners downstairs for long conversations, acoustic sets upstairs on Fridays.',
+    address: '112 Rajpur Road, Dehradun 248001', landmark: 'Opposite the Jakhan bus stop, first floor',
+    priceForTwo: 500, hours: { days: ALL_DAYS, open: '9:00 AM', close: '10:30 PM' },
+    goodToKnow: { food: ['Veg & non-veg', 'Vegan options', 'Eggless desserts'], alcohol: 'Not served', seating: ['Couple tables', 'Indoor', 'Outdoor'], vibe: 'Quiet', payment: ['UPI', 'Card', 'Cash'], parking: 'Two-wheeler parking', accessibility: ['Step-free entry'], amenities: ['Wi-Fi', 'Charging points', 'Live music'], safety: [...SAFE, 'On a main road'], studentDiscount: 10 },
+    policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Deck seating closes at 8 PM in winter. Last order 10 PM.' },
+    menu: { Cappuccino: { price: 160, diet: 'veg' }, 'Matcha Latte': { price: 210, diet: 'veg' }, 'Hazelnut Cold Brew': { price: 190, diet: 'veg' }, 'Bun Maska': { price: 90, diet: 'veg' }, 'Lemon Tart': { price: 150, diet: 'egg' } },
+    fssai: '12623001000123',
+  },
+  'lantern-house': {
+    description: 'A tiny fairy-lit chai café with a book nook and floor seating. Kulhad chai, masala Maggi and board games for slow evenings.',
+    address: '27 Jakhan Road, Dehradun 248001', landmark: 'Next to Jakhan Shiv Mandir, ground floor',
+    priceForTwo: 300, hours: { days: ALL_DAYS, open: '11:00 AM', close: '10:00 PM' },
+    goodToKnow: { food: ['Pure veg', 'Jain options'], alcohol: 'Not served', seating: ['Couple tables', 'Floor seating', 'Indoor'], vibe: 'Quiet', payment: ['UPI', 'Cash'], parking: 'Two-wheeler parking', accessibility: [], amenities: ['Wi-Fi', 'Board games', 'Pet friendly'], safety: SAFE, studentDiscount: 15 },
+    policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Shoes off in the floor-seating area.' },
+    menu: { 'Kulhad Chai': { price: 40, diet: 'veg' }, 'Masala Maggi': { price: 90, diet: 'veg' }, 'Banana Bread': { price: 110, diet: 'egg' }, 'Hot Chocolate': { price: 150, diet: 'veg' } },
+    fssai: '12623001000456',
+  },
+  'momo-mill': {
+    description: 'Paltan Bazaar’s busiest momo counter with a sit-down upstairs. Tandoori and kurkure momos, thukpa, and a chutney bar you’ll talk about later.',
+    address: '8 Paltan Bazaar, Dehradun 248001', landmark: 'Two shops from Clock Tower towards Gandhi Road, upstairs',
+    priceForTwo: 350, hours: { days: ALL_DAYS, open: '12:00 PM', close: '10:00 PM' },
+    goodToKnow: { food: ['Veg & non-veg'], alcohol: 'Not served', seating: ['Indoor'], vibe: 'Lively', payment: ['UPI', 'Cash'], parking: 'No parking', accessibility: [], amenities: [], safety: [...SAFE, 'On a main road'], studentDiscount: 10 },
+    policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Busy on weekend evenings. Use the Gandhi Road parking and walk 3 minutes.' },
+    menu: { 'Tandoori Momos': { price: 140, diet: 'nonveg' }, 'Kurkure Momos': { price: 130, diet: 'veg' }, Thukpa: { price: 150, diet: 'nonveg' }, 'Butter Tea': { price: 60, diet: 'veg' } },
+    fssai: '12623001000789',
+  },
+  'seoul-steam': {
+    description: 'A calm Korean café with a K-pop playlist and a photo wall. Ramen you can make as spicy as you dare, boba, and bingsu big enough for two.',
+    address: '41 Vasant Vihar Main Road, Dehradun 248006', landmark: 'Above the Vasant Vihar post office',
+    priceForTwo: 650, hours: { days: ['Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], open: '12:00 PM', close: '9:30 PM' },
+    goodToKnow: { food: ['Veg & non-veg', 'Eggless desserts'], alcohol: 'Not served', seating: ['Couple tables', 'Indoor'], vibe: 'Chatty', payment: ['UPI', 'Card'], parking: 'Car parking', accessibility: ['Step-free entry', 'Accessible washroom'], amenities: ['Wi-Fi', 'Charging points'], safety: SAFE },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Closed on Mondays.' },
+    menu: { 'Spicy Ramen': { price: 240, diet: 'nonveg' }, 'Brown Sugar Boba': { price: 180, diet: 'veg' }, 'Mango Bingsu': { price: 260, diet: 'veg' }, 'Korean Corn Dog': { price: 160, diet: 'veg' } },
+    fssai: '12623001001012',
+  },
+  'olive-oak': {
+    description: 'Candlelit Italian with a wood-fired oven and a vinyl playlist. Good for an anniversary, or a first date that wants to feel like an occasion.',
+    address: '205 Rajpur Road, Dehradun 248001', landmark: 'Near the Rajpur Road Shiv Mandir turn, inside the courtyard',
+    priceForTwo: 1600, hours: { days: ALL_DAYS, open: '12:30 PM', close: '11:00 PM' },
+    goodToKnow: { food: ['Veg & non-veg', 'Vegan options', 'Gluten-free options'], alcohol: 'Served', seating: ['Couple tables', 'Indoor', 'Private corner'], vibe: 'Quiet', payment: ['UPI', 'Card', 'Cash'], parking: 'Valet', accessibility: ['Step-free entry', 'Accessible washroom'], amenities: ['Wi-Fi'], safety: [...SAFE, 'Women staff on every shift'] },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Smart-casual. Window tables are reserved for Mingleo dates on weekends.' },
+    menu: { 'Wood-fired Margherita': { price: 420, diet: 'veg' }, 'Truffle Mushroom Pasta': { price: 480, diet: 'veg' }, Tiramisu: { price: 290, diet: 'egg' }, 'Virgin Mojito': { price: 180, diet: 'veg' } },
+    fssai: '12623001001345',
+  },
+  'skyline-terrace': {
+    description: 'A rooftop on Sahastradhara Road with sunset over the valley and a bonfire in winter. Garhwali food done properly: kafuli, mandua roti, jhangora kheer.',
+    address: '17 Sahastradhara Road, Dehradun 248013', landmark: '2 km after IT Park, rooftop of the Ridgeview building',
+    priceForTwo: 1800, hours: { days: ALL_DAYS, open: '4:00 PM', close: '11:00 PM' },
+    goodToKnow: { food: ['Veg & non-veg', 'Jain options'], alcohol: 'Not served', seating: ['Couple tables', 'Rooftop', 'Outdoor'], vibe: 'Quiet', payment: ['UPI', 'Card', 'Cash'], parking: 'Car parking', accessibility: ['Lift'], amenities: ['Heater or bonfire', 'Live music'], safety: [...SAFE, 'Women staff on every shift'] },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 30 minutes', houseRules: 'Carry a jacket after sunset from October to March.' },
+    menu: { 'Pahadi Thali': { price: 450, diet: 'veg' }, 'Aloo ke Gutke': { price: 180, diet: 'veg' }, 'Jhangora Kheer': { price: 140, diet: 'veg' }, 'Buransh Sharbat': { price: 90, diet: 'veg' } },
+    fssai: '12623001001678',
+  },
+  'clay-kiln': {
+    description: 'A sunny pottery studio in a Dalanwala bungalow. Beginners welcome: you’ll each throw a cup on the wheel and glaze it, and we fire and keep it for you to collect.',
+    address: '9 Old Survey Road, Dalanwala, Dehradun 248001', landmark: 'White gate opposite the Dalanwala park',
+    priceForTwo: 1600, hours: { days: ['Wed', 'Thu', 'Fri', 'Sat', 'Sun'], open: '11:00 AM', close: '8:00 PM' },
+    goodToKnow: { seating: ['Indoor'], vibe: 'Chatty', payment: ['UPI', 'Card'], parking: 'Car parking', accessibility: ['Step-free entry'], amenities: ['Pet friendly'], safety: SAFE, studentDiscount: 10 },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Wear clothes you don’t mind getting clay on. Fired pieces are ready to collect in 10 days.' },
+    menu: { 'Wheel Throwing': { price: 800 }, 'Glaze Painting': { price: 500 } },
+  },
+  'strike-zone': {
+    description: 'Retro neon bowling lanes, air hockey and an arcade. Loud in the best way. Good for a first date that needs an icebreaker.',
+    address: '3rd floor, 88 Rajpur Road, Dehradun 248001', landmark: 'Hillview complex, take the lift to the 3rd floor',
+    priceForTwo: 900, hours: { days: ALL_DAYS, open: '11:00 AM', close: '11:00 PM' },
+    goodToKnow: { food: ['Veg & non-veg'], alcohol: 'Not served', seating: ['Indoor'], vibe: 'Lively', payment: ['UPI', 'Card', 'Cash'], parking: 'Car parking', accessibility: ['Lift', 'Accessible washroom'], amenities: ['Charging points'], safety: [...SAFE, 'On a main road'] },
+    policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Bowling shoes provided. Socks required.' },
+    menu: { 'Loaded Nachos': { price: 220, diet: 'veg' }, 'Classic Milkshake': { price: 160, diet: 'veg' } },
+    fssai: '12623001001901',
+  },
+  'acoustic-room': {
+    description: 'An intimate 60-seat room near Astley Hall for open mics, poetry nights and indie gigs. Reserved Mingleo seats near the stage.',
+    address: '14 Astley Hall, Rajpur Road, Dehradun 248001', landmark: 'Behind the Astley Hall clock, first floor',
+    priceForTwo: 700, hours: { days: ['Thu', 'Fri', 'Sat', 'Sun'], open: '6:00 PM', close: '11:30 PM' },
+    goodToKnow: { food: ['Veg & non-veg'], alcohol: 'Not served', seating: ['Indoor', 'Couple tables'], vibe: 'Lively', payment: ['UPI', 'Card'], parking: 'Two-wheeler parking', accessibility: [], amenities: ['Live music', 'Wi-Fi'], safety: [...SAFE, 'On a main road'], studentDiscount: 20 },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 30 minutes', houseRules: 'Phones on silent during sets. Sign-ups for the open mic close at 8 PM.' },
+    menu: { 'Mint Mojito (zero-proof)': { price: 160, diet: 'veg' }, 'Truffle Fries': { price: 220, diet: 'veg' } },
+    fssai: '12623001002234',
+  },
+  'dice-dosti': {
+    description: 'A board-game café with 200+ games and staff who will teach you any of them. Perfect if you’d rather laugh than make small talk.',
+    address: '56 Ballupur Chowk, Chakrata Road, Dehradun 248001', landmark: 'Above the bakery on Ballupur Chowk',
+    priceForTwo: 500, hours: { days: ALL_DAYS, open: '1:00 PM', close: '11:00 PM' },
+    goodToKnow: { food: ['Veg & non-veg', 'Eggless desserts'], alcohol: 'Not served', seating: ['Indoor', 'Couple tables'], vibe: 'Lively', payment: ['UPI', 'Card', 'Cash'], parking: 'Two-wheeler parking', accessibility: [], amenities: ['Board games', 'Wi-Fi', 'Charging points'], safety: SAFE, studentDiscount: 15 },
+    policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes' },
+    menu: { 'Cold Coffee': { price: 140, diet: 'veg' }, 'Peri-Peri Fries': { price: 150, diet: 'veg' }, 'Brownie Sizzler': { price: 190, diet: 'egg' } },
+    fssai: '12623001002567',
+  },
+  'pahadi-kitchen': {
+    description: 'Cook a Garhwali meal together with a home chef: mandua roti, aloo ke gutke and jakhiya tadka. Then sit down and eat what you made.',
+    address: '12 Jakhan Road, Dehradun 248001', landmark: 'Green door next to the Jakhan library',
+    priceForTwo: 1400, hours: { days: ['Fri', 'Sat', 'Sun'], open: '11:00 AM', close: '9:00 PM' },
+    goodToKnow: { food: ['Pure veg'], alcohol: 'Not served', seating: ['Indoor'], vibe: 'Chatty', payment: ['UPI', 'Cash'], parking: 'Two-wheeler parking', accessibility: ['Step-free entry'], amenities: [], safety: SAFE },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Tell us about allergies when you book.' },
+    menu: { 'Mandua Roti': { price: 0, diet: 'veg' } },
+    fssai: '12623001002890',
+  },
+  'doon-trails': {
+    description: 'A guided 4-km sunrise trek near Maldevta, with Maggi and chai at the top. Pickup from Raipur. Easy grade: no trekking experience needed.',
+    address: 'Meeting point: Raipur Chowk, Dehradun 248008', landmark: 'Outside the Raipur petrol pump',
+    priceForTwo: 1000, hours: { days: ['Sat', 'Sun'], open: '5:00 AM', close: '10:00 AM' },
+    goodToKnow: { seating: ['Outdoor'], vibe: 'Chatty', payment: ['UPI', 'Card'], parking: 'Car parking', accessibility: [], amenities: [], safety: ['Staff briefed on Mingleo dates'] },
+    policies: { cancellation: 'Free until 24 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Wear trek shoes and carry water. Treks are cancelled with a full refund if it rains.' },
+    menu: { 'Maggi & Chai at the Top': { price: 0, diet: 'veg' } },
+  },
+}

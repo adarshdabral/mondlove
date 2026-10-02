@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api, errorMessage } from '@/lib/api'
 import { useSession } from '@/lib/session'
@@ -26,15 +27,20 @@ export function PartnerSignup() {
             body: { account: 'partner', name: f.name, email: f.email, password: f.password, business: { name: f.business, kind, category: f.category, area: f.area } },
           })
           setUser(user)
-          router.replace('/partner')
+          // Next: the listing wizard (photos, menu, what guests should know).
+          router.replace('/partner/setup')
         } catch (err) {
           setError(errorMessage(err))
           setBusy(false)
         }
       }}
-      className="space-y-4 rounded-[30px] border border-line bg-white p-6 shadow-lift md:p-8"
+      id="join"
+      className="scroll-mt-24 space-y-4 rounded-[30px] border border-line bg-white p-6 shadow-lift md:p-8"
     >
-      <div className="font-display text-2xl">List your venue</div>
+      <div className="flex items-baseline justify-between gap-3">
+        <div className="font-display text-2xl">Register your venue</div>
+        <Link href="/partners/login" className="shrink-0 text-[13px] font-semibold text-ember">Already a partner? Log in</Link>
+      </div>
       <div className="flex gap-2">
         {(['cafe', 'restaurant', 'activity'] as const).map((k) => (
           <Chip key={k} tone="ink" active={kind === k} onClick={() => setKind(k)}>{k === 'cafe' ? 'Café' : k === 'restaurant' ? 'Restaurant' : 'Activity'}</Chip>
@@ -50,7 +56,7 @@ export function PartnerSignup() {
       <Field label="Password" hint="At least 8 characters."><input className={inputCls} required type="password" minLength={8} value={f.password} onChange={set('password')} /></Field>
       {error && <div role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
       <Button full size="lg" type="submit" variant="dark" disabled={busy}>{busy ? 'Creating…' : 'Create partner account'}</Button>
-      <p className="text-center text-xs text-muted">We verify every venue (licences and seating) before it goes live, usually within two working days.</p>
+      <p className="text-center text-xs text-muted">Next, you’ll add photos of your venue and food, your menu, timings and what guests should know. We verify every venue before it goes live, usually within two working days.</p>
     </form>
   )
 }

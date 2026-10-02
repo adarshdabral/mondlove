@@ -124,7 +124,12 @@ export function TreatPicker({ treats, value, onChange, tone = 'ember' }: { treat
             className={`rounded-2xl border p-3 text-left transition cursor-pointer active:scale-[0.98] ${on ? (tone === 'ember' ? 'border-ember bg-ember-soft' : 'border-plum bg-plum-soft') : 'border-line bg-white hover:border-ink/20'}`}
           >
             <div className="flex items-start justify-between">
-              <span className="text-2xl">{t.emoji}</span>
+              {t.photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={t.photo} alt="" className="h-14 w-14 rounded-xl object-cover" loading="lazy" />
+              ) : (
+                <span className="text-2xl">{t.emoji}</span>
+              )}
               {on && <span className={`grid h-5 w-5 place-items-center rounded-full text-white ${tone === 'ember' ? 'bg-ember' : 'bg-plum'}`}><Check size={12} strokeWidth={3} /></span>}
             </div>
             <div className="mt-1.5 text-[13px] font-semibold leading-tight">{t.name}</div>
@@ -136,10 +141,15 @@ export function TreatPicker({ treats, value, onChange, tone = 'ember' }: { treat
   )
 }
 
-export function VenueTile({ v, selected, onClick, badge }: { v: Pick<Venue, 'id' | 'name' | 'emoji' | 'tone' | 'category' | 'area'>; selected?: boolean; onClick?: () => void; badge?: string }) {
+export function VenueTile({ v, selected, onClick, badge }: { v: Pick<Venue, 'id' | 'name' | 'emoji' | 'tone' | 'category' | 'area' | 'photos'>; selected?: boolean; onClick?: () => void; badge?: string }) {
   return (
     <button type="button" onClick={onClick} className={`relative w-full overflow-hidden rounded-3xl border-2 bg-white text-left transition cursor-pointer ${selected ? 'border-ember shadow-lift' : 'border-transparent shadow-card hover:shadow-lift'}`}>
-      <VenueArt emoji={v.emoji} tone={v.tone} className="h-20" />
+      {v.photos?.[0] ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={v.photos[0].url} alt={v.name} className="h-20 w-full object-cover" loading="lazy" />
+      ) : (
+        <VenueArt emoji={v.emoji} tone={v.tone} className="h-20" />
+      )}
       {badge && <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-ember-dark">{badge}</span>}
       <div className="p-3">
         <div className="truncate text-[13px] font-semibold">{v.name}</div>

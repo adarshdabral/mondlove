@@ -100,7 +100,7 @@ const P_POP = [
   { path: 'from', select: 'handle name avatar verification' },
   { path: 'to', select: 'handle name avatar verification' },
   { path: 'lastEditedBy', select: 'handle' },
-  { path: 'venue', select: 'slug name area emoji tone category' },
+  { path: 'venue', select: 'slug name area emoji tone category address landmark mapsUrl phone photos goodToKnow policies' },
   { path: 'experience', select: 'code name' },
   { path: 'booking', select: 'ref' },
 ]
@@ -174,7 +174,7 @@ consumer.post('/proposals/:id/decline', proposalAction((id, u) => declineProposa
 /* ---------------- Bookings ---------------- */
 
 const B_POP = [
-  { path: 'venue', select: 'slug name area emoji tone category' },
+  { path: 'venue', select: 'slug name area emoji tone category address landmark mapsUrl phone photos goodToKnow policies' },
   { path: 'experience', select: 'code name includes duration' },
   { path: 'users', select: 'handle name avatar verification' },
   { path: 'bookedBy', select: 'handle name avatar' },
@@ -196,7 +196,12 @@ function bookingView(b: any, viewer: UserDoc) {
     ...base,
     secret: false,
     title: b.title,
-    venue: { id: b.venue.slug, name: b.venue.name, area: b.venue.area, emoji: b.venue.emoji, tone: b.venue.tone, category: b.venue.category },
+    venue: {
+      id: b.venue.slug, name: b.venue.name, area: b.venue.area, emoji: b.venue.emoji, tone: b.venue.tone, category: b.venue.category,
+      // Booked guests get the practical details, including the venue's phone number.
+      address: b.venue.address ?? '', landmark: b.venue.landmark ?? '', mapsUrl: b.venue.mapsUrl ?? '', phone: b.venue.phone ?? '',
+      cover: b.venue.photos?.[0]?.url ?? null, goodToKnow: b.venue.goodToKnow ?? {}, policies: b.venue.policies ?? {},
+    },
     experience: { id: b.experience.code, name: b.experience.name, includes: b.experience.includes, duration: b.experience.duration },
     items: b.items,
     treats: b.treats,

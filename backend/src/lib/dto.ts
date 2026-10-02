@@ -60,6 +60,16 @@ export function venueDto(v: any, experiences: any[] = []) {
     slots: v.slots,
     verified: v.status === 'verified',
     featured: v.featured,
+    // "Know before you go". Phone and licence numbers are deliberately not public.
+    description: v.description ?? '',
+    address: v.address ?? '',
+    landmark: v.landmark ?? '',
+    mapsUrl: v.mapsUrl ?? '',
+    priceForTwo: v.priceForTwo ?? null,
+    hours: v.hours?.days?.length ? v.hours : null,
+    photos: v.photos ?? [],
+    goodToKnow: v.goodToKnow ?? {},
+    policies: v.policies ?? {},
     packages: experiences
       .filter((e) => String(e.venue?._id ?? e.venue) === String(v._id) && e.active)
       .map(experienceDto),

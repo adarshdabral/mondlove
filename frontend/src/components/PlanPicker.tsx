@@ -6,6 +6,7 @@ import type { Venue } from '../lib/types'
 import { inr, upcomingDays } from '../lib/constants'
 import { Chip, Pill, SectionTitle } from './ui'
 import { VenueTile } from './shared'
+import { VenueDetailsToggle } from './VenueDetails'
 
 export interface Plan {
   venueId: string
@@ -41,6 +42,7 @@ export function PlanPicker({ venues, value, onChange, favourite, showPrice = tru
           ))}
         </div>
         {venue && <div className="mt-3 flex flex-wrap gap-1.5">{venue.ambience.map((a) => <Pill key={a}>{a}</Pill>)}</div>}
+        {venue && <div className="mt-3"><VenueDetailsToggle key={venue.id} venue={venue} showPrices={showPrice} /></div>}
       </section>
 
       {venue && (

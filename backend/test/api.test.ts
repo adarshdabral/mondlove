@@ -284,7 +284,7 @@ describe('registration', () => {
     expect(res.status).toBe(201)
     expect(res.body.user.role).toBe('partner')
     const dash = await agent.get('/api/partner/dashboard')
-    expect(dash.body.venue.status).toBe('pending')
+    expect(dash.body.venue.status).toBe('draft')
     expect((await api.get('/api/venues')).body.venues.map((v: { name: string }) => v.name)).not.toContain('Sunny Side Café')
     await as('nandini').post(`/api/admin/venues/${dash.body.venue.id}/verify`, { approve: true })
     expect((await api.get('/api/venues')).body.venues.map((v: { name: string }) => v.name)).toContain('Sunny Side Café')
@@ -336,5 +336,80 @@ describe('photos', () => {
     const m = await as('isha').post('/api/memories', { title: 'Picnic', photos: [up.body.url] })
     expect(m.status).toBe(201)
     expect((await as('isha').post('/api/memories', { title: 'Sneaky', photos: ['https://evil.example/x.png'] })).status).toBe(400)
+  })
+})
+
+describe('venue listing (registration wizard)', () => {
+  const png = Buffer.from('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082', 'hex')
+  const owner = request.agent(app)
+  const csrf = { 'x-mingleo-csrf': '1' }
+  const upload = (kind: 'venue' | 'menu', a = owner) => a.post(`/api/media?kind=${kind}`).set(csrf).set('Content-Type', 'image/png').send(png)
+
+  it('creates a private draft and explains what is missing', async () => {
+    const res = await owner.post('/api/auth/register').set(csrf).send({ account: 'partner', name: 'Ritu Negi', email: 'ritu@fogfilter.in', password: 'longenough1', business: { name: 'Fog & Filter', kind: 'cafe', category: 'Specialty coffee', area: 'Jakhan' } })
+    expect(res.status).toBe(201)
+    const listing = (await owner.get('/api/partner/venue')).body
+    expect(listing.venue.status).toBe('draft')
+    expect(listing.missing).toEqual(expect.arrayContaining(['At least 3 venue photos', 'FSSAI licence number', 'At least one date package']))
+    const submit = await owner.post('/api/partner/venue/submit').set(csrf)
+    expect(submit.status).toBe(422)
+    expect(submit.body.missing.length).toBeGreaterThan(3)
+    expect((await as('nandini').get('/api/admin/venues')).body.venues.map((v: { name: string }) => v.name)).not.toContain('Fog & Filter')
+  })
+
+  it('stops people reusing photos they did not upload, and non-partners uploading venue photos', async () => {
+    expect((await upload('venue', agents.aarav)).status).toBe(403)
+    const other = (await upload('venue', agents.rhea)).body.url
+    const res = await owner.patch('/api/partner/venue').set(csrf).send({ photos: [{ url: other }] })
+    expect(res.status).toBe(400)
+  })
+
+  it('accepts a complete listing, keeps draft photos private, then goes live after review', async () => {
+    const photos = [] as { url: string; caption?: string }[]
+    for (const caption of ['Entrance', 'Couple table', 'Deck at sunset']) photos.push({ url: (await upload('venue')).body.url, caption })
+    const dish = (await upload('menu')).body.url
+
+    // Draft photos: owner yes, public no.
+    expect((await owner.get(photos[0].url)).status).toBe(200)
+    expect((await api.get(photos[0].url)).status).toBe(404)
+    expect((await agents.kabir.get(photos[0].url)).status).toBe(404)
+
+    const bad = await owner.patch('/api/partner/venue').set(csrf).send({ licence: { fssai: '123' } })
+    expect(bad.status).toBe(400)
+
+    const saved = await owner.patch('/api/partner/venue').set(csrf).send({
+      description: 'A tiny café in Jakhan for slow coffee dates, with a reading nook and a balcony that catches the evening fog.',
+      address: '21 Jakhan Road, Dehradun 248001', landmark: 'Opposite the library', phone: '+91 98370 11111', priceForTwo: 450,
+      hours: { days: ['Wed', 'Thu', 'Fri', 'Sat', 'Sun'], open: '10:00 AM', close: '9:30 PM' }, slots: ['5:00 PM', '7:00 PM'],
+      ambience: ['Reading nook', 'Balcony'], photos,
+      treats: [{ name: 'Pour-over', emoji: '☕', photo: dish, price: 180, diet: 'veg' }, { name: 'Walnut Brownie', emoji: '🍫', price: 120, diet: 'egg' }],
+      goodToKnow: { food: ['Pure veg', 'Eggless desserts'], alcohol: 'Not served', payment: ['UPI', 'Cash'], seating: ['Couple tables'], vibe: 'Quiet', parking: 'Two-wheeler parking', safety: ['CCTV'], studentDiscount: 10 },
+      policies: { cancellation: 'Free until 3 hours before', lateArrival: 'Table held for 15 minutes', houseRules: 'Last order 9 PM.' },
+      licence: { fssai: '12623001234567' },
+    })
+    expect(saved.status).toBe(200)
+    expect(saved.body.missing).toEqual(['At least one date package'])
+
+    await owner.post('/api/partner/experiences').set(csrf).send({ name: 'Pour-over & Brownie Date', includes: ['2 pour-overs', '1 brownie to share'], price: 420, days: ['Fri', 'Sat'], capacity: 3 })
+    const submitted = await owner.post('/api/partner/venue/submit').set(csrf)
+    expect(submitted.status).toBe(200)
+    expect(submitted.body.venue.status).toBe('pending')
+
+    // Admin reviews the full listing (including private licence and phone) and approves it.
+    const slug = submitted.body.venue.id
+    const review = await as('nandini').get(`/api/admin/venues/${slug}`)
+    expect(review.body.venue.licence.fssai).toBe('12623001234567')
+    expect(review.body.venue.photos).toHaveLength(3)
+    expect((await as('nandini').get(photos[1].url)).status).toBe(200)
+    await as('nandini').post(`/api/admin/venues/${slug}/verify`, { approve: true })
+
+    // Live: photos are public; the public listing never exposes phone or licence numbers.
+    expect((await api.get(photos[0].url)).status).toBe(200)
+    const pub = (await api.get(`/api/venues/${slug}`)).body.venue
+    expect(pub.photos).toHaveLength(3)
+    expect(pub.goodToKnow.food).toContain('Pure veg')
+    expect(pub.treats[0]).toMatchObject({ name: 'Pour-over', price: 180, diet: 'veg' })
+    expect(pub).not.toHaveProperty('licence')
+    expect(pub).not.toHaveProperty('phone')
   })
 })

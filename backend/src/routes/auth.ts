@@ -62,8 +62,8 @@ auth.post('/register', async (req, res) => {
     const slug = `${body.business.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-${Math.random().toString(36).slice(2, 5)}`
     // New businesses start pending; an admin verifies documents before they appear to users.
     await Venue.create({
-      slug, name: body.business.name, kind: body.business.kind, category: body.business.category, area: body.business.area, owner: user._id, status: 'pending',
-      emoji: body.business.kind === 'activity' ? '🎨' : body.business.kind === 'cafe' ? '☕' : '🍽️', tone: ['#FBEFD3', '#D9A23B'], slots: ['6:00 PM', '7:30 PM'],
+      slug, name: body.business.name, kind: body.business.kind, category: body.business.category, area: body.business.area, owner: user._id, status: 'draft', // completed through the listing wizard, then submitted for review
+      emoji: body.business.kind === 'activity' ? '🎨' : body.business.kind === 'cafe' ? '☕' : '🍽️', tone: ['#FBEFD3', '#D9A23B'], slots: [],
     })
     startSession(res, user)
     return res.status(201).json({ user: selfDto(user.toObject() as UserDoc) })

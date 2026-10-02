@@ -62,7 +62,16 @@ All venues and businesses in the seed are **fictional**; the neighbourhoods and 
 
 ## What's in the app
 
-- **Landing page** (`/`) plus `/partners` (venue sign-up), `/business`, `/privacy` and `/terms`.
+- **Landing page** (`/`) plus `/business`, `/privacy` and `/terms`.
+- **Cafés and activity owners:** register at **`/partners`**, log in at **`/partners/login`**. They're reached from the header's "For business" button, the sign-up screen's "I own a café, restaurant or activity" option, the switch on the login page, and the footer. After registering, owners go through a five-step listing wizard at **`/partner/setup`**:
+  1. About & timings: description, address, landmark, map link, phone, price for two, ambience, opening hours, date slots.
+  2. Venue photos: 3–12, with captions and a chosen cover.
+  3. Menu or activities: 2–16 items, each with a photo, price and veg/egg/non-veg mark. These are also the items people pick for each other on a proposal.
+  4. Good to know: food, alcohol, seating, vibe, payment, parking, accessibility, amenities, safety, student discount, cancellation and late-arrival policy, house rules.
+  5. Date package and FSSAI/GSTIN, then submit.
+
+  The listing stays a private draft until it's submitted. Submit refuses with a list of what's still missing. Admins review the whole listing (licences included) before approving it.
+  Photos are resized in the browser and stay private until the venue is verified. Phone numbers go only to guests with a booking. Licence numbers are never public.
 - **Sign up → onboarding:** avatar studio, interests, preferences, prompt, trusted contact, and an optional partner invite.
 - **Singles** (`/app`):
   - Discover with server-computed compatibility.

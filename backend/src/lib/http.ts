@@ -66,6 +66,16 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
   next()
 }
 
+/** Attaches the user when a valid session is present; never rejects. For mixed public/private routes. */
+export async function optionalAuth(req: Request, res: Response, next: NextFunction) {
+  try {
+    await requireAuth(req, res, () => {})
+  } catch {
+    req.user = undefined
+  }
+  next()
+}
+
 export const requireRole =
   (...roles: Array<'user' | 'partner' | 'admin'>) =>
   (req: Request, _res: Response, next: NextFunction) => {

@@ -69,6 +69,35 @@ export interface Treat {
   name: string
   emoji: string
   note?: string
+  /** Set by the venue: a photo of the dish or activity. */
+  photo?: string
+  price?: number
+  diet?: 'veg' | 'nonveg' | 'egg'
+}
+
+export interface GoodToKnow {
+  food?: string[]
+  alcohol?: string
+  seating?: string[]
+  vibe?: string
+  payment?: string[]
+  parking?: string
+  accessibility?: string[]
+  amenities?: string[]
+  safety?: string[]
+  studentDiscount?: number
+}
+
+export interface VenuePolicies {
+  cancellation?: string
+  lateArrival?: string
+  houseRules?: string
+}
+
+export interface OpeningHours {
+  days: string[]
+  open: string
+  close: string
 }
 
 export interface Package {
@@ -101,6 +130,15 @@ export interface Venue {
   verified: boolean
   featured?: boolean
   packages: Package[]
+  description?: string
+  address?: string
+  landmark?: string
+  mapsUrl?: string
+  priceForTwo?: number | null
+  hours?: OpeningHours | null
+  photos?: { url: string; caption?: string }[]
+  goodToKnow?: GoodToKnow
+  policies?: VenuePolicies
 }
 
 export type ProposalStatus = 'sent' | 'customized' | 'confirmed' | 'declined' | 'cancelled'
@@ -144,7 +182,10 @@ export interface Booking {
   title: string
   hint?: string
   from?: MiniPerson
-  venue?: { id: string; name: string; area: string; emoji: string; tone: [string, string]; category: string }
+  venue?: {
+    id: string; name: string; area: string; emoji: string; tone: [string, string]; category: string
+    address?: string; landmark?: string; mapsUrl?: string; phone?: string; cover?: string | null; goodToKnow?: GoodToKnow; policies?: VenuePolicies
+  }
   experience?: { id: string; name: string; includes: string[]; duration?: string }
   items?: string[]
   treats?: { forReceiver?: Treat; forSender?: Treat }

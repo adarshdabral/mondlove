@@ -9,6 +9,7 @@ import { useApi, useToast } from '@/lib/session'
 import type { Booking, Venue } from '@/lib/types'
 import { Button, Chip, Eyebrow, Pill, Sheet, VenueArt, inputCls } from '@/components/ui'
 import { EmptyState, PageHeader, PageLoader } from '@/components/shared'
+import { VenueDetails } from '@/components/VenueDetails'
 
 const CATS = [
   ['all', 'All', '✨'], ['restaurant', 'Restaurants', '🍽️'], ['cafe', 'Cafés', '☕'], ['activity', 'Activities', '🎳'],
@@ -63,7 +64,12 @@ function Experiences() {
           {list.map((v) => (
             <button key={v.id} onClick={() => open(v)} className="overflow-hidden rounded-3xl border border-line/70 bg-white text-left shadow-card transition hover:-translate-y-0.5 hover:shadow-lift cursor-pointer">
               <div className="relative">
-                <VenueArt emoji={v.emoji} tone={v.tone} className="h-36" size="lg" />
+                {v.photos?.[0] ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={v.photos[0].url} alt={v.photos[0].caption || v.name} className="h-36 w-full object-cover" loading="lazy" />
+                ) : (
+                  <VenueArt emoji={v.emoji} tone={v.tone} className="h-36" size="lg" />
+                )}
                 {v.featured && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">Featured</span>}
               </div>
               <div className="p-4">
@@ -85,11 +91,9 @@ function Experiences() {
       <Sheet open={!!sel} onClose={() => setSel(null)}>
         {sel && (
           <div>
-            <VenueArt emoji={sel.emoji} tone={sel.tone} className="h-36 rounded-3xl" size="lg" />
-            <div className="mt-4 text-xs font-semibold text-muted">{sel.category} · {sel.area} · ★ {sel.rating} ({sel.reviews})</div>
-            <h3 className="mt-1 font-display text-[26px] leading-tight">{sel.name}</h3>
-            <div className="mt-2 flex flex-wrap gap-1.5">{sel.ambience.map((a) => <Pill key={a}>{a}</Pill>)}</div>
-            <div className="mt-4 space-y-2">
+            <VenueDetails venue={sel} />
+            <h4 className="mt-6 font-display text-lg">Book a date package</h4>
+            <div className="mt-2 space-y-2">
               {sel.packages.map((x) => (
                 <button key={x.id} onClick={() => setPkg(x.id)} className={`w-full rounded-2xl border p-3 text-left cursor-pointer ${pkg === x.id ? 'border-ember bg-ember-soft/60' : 'border-line bg-white'}`}>
                   <div className="flex justify-between font-semibold"><span>{x.name}</span><span>{inr(x.price)}</span></div>
@@ -104,7 +108,7 @@ function Experiences() {
             <div className="mt-6 flex items-center justify-between">
               <div>
                 <div className="font-display text-2xl">{p && inr(p.price)}</div>
-                <div className="text-[11px] text-muted">for two · free cancellation 24h before</div>
+                <div className="text-[11px] text-muted">for two{sel.policies?.cancellation ? ` · cancellation: ${sel.policies.cancellation.toLowerCase()}` : ''}</div>
               </div>
               <Button
                 disabled={!p || !slot || busy}

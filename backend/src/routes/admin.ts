@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { Block, Booking, Couple, Payment, Proposal, REVENUE_STREAMS, Report, Revenue, User, Venue } from '../models/index.js'
+import { Block, Booking, Couple, Experience, Payment, Proposal, REVENUE_STREAMS, Report, Revenue, User, Venue } from '../models/index.js'
 import { notFound, requireAuth, requireRole } from '../lib/http.js'
 
 /** Platform admin: overview, trust & safety, verification, moderation. */
@@ -108,9 +108,26 @@ admin.get('/users', async (_req, res) => {
 })
 
 admin.get('/venues', async (req, res) => {
-  const status = z.enum(['pending', 'verified', 'suspended']).optional().parse(req.query.status)
-  const venues = await Venue.find(status ? { status } : {}).lean()
+  const status = z.enum(['draft', 'pending', 'verified', 'suspended']).optional().parse(req.query.status)
+  // Drafts are unfinished listings the owner hasn't submitted; admins see them only when asked for explicitly.
+  const venues = await Venue.find(status ? { status } : { status: { $ne: 'draft' } }).sort({ submittedAt: -1, createdAt: -1 }).lean()
   res.json({ venues: venues.map((v) => ({ id: v.slug, name: v.name, kind: v.kind, area: v.area, documents: v.documents, status: v.status, plan: v.plan, featured: v.featured })) })
+})
+
+/** Full listing for review, including photos and licence numbers. */
+admin.get('/venues/:slug', async (req, res) => {
+  const v = await Venue.findOne({ slug: req.params.slug }).populate<{ owner: { name: string; email: string } }>('owner', 'name email').lean()
+  if (!v) throw notFound('Venue not found')
+  const packages = await Experience.find({ venue: v._id }).lean()
+  res.json({
+    venue: {
+      id: v.slug, name: v.name, kind: v.kind, category: v.category, area: v.area, status: v.status, submittedAt: v.submittedAt,
+      owner: v.owner ? { name: v.owner.name, email: v.owner.email } : null,
+      description: v.description, address: v.address, landmark: v.landmark, mapsUrl: v.mapsUrl, phone: v.phone, priceForTwo: v.priceForTwo,
+      hours: v.hours, slots: v.slots, ambience: v.ambience, photos: v.photos, treats: v.treats, goodToKnow: v.goodToKnow, policies: v.policies, licence: v.licence,
+    },
+    packages: packages.map((e) => ({ id: e.code, name: e.name, includes: e.includes, price: e.price, active: e.active })),
+  })
 })
 
 admin.post('/venues/:slug/verify', async (req, res) => {

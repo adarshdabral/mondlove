@@ -11,6 +11,7 @@ import { Avatar } from '@/components/Avatar'
 import { PlanPicker, type Plan } from '@/components/PlanPicker'
 import { Button, Card, Chip, Eyebrow, SectionTitle, Sheet, VenueArt } from '@/components/ui'
 import { ErrorState, PageLoader, SafetySheet, TreatPicker } from '@/components/shared'
+import { VenueDetailsToggle } from '@/components/VenueDetails'
 
 interface Detail {
   proposal: Proposal
@@ -163,7 +164,12 @@ export default function ProposalPage() {
 
         <div className="space-y-4">
           <div className="overflow-hidden rounded-[28px] border border-line bg-white shadow-card">
-            <VenueArt emoji={venue.emoji} tone={venue.tone} className="h-32" size="lg" />
+            {venue.photos?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={venue.photos[0].url} alt={venue.name} className="h-32 w-full object-cover" />
+            ) : (
+              <VenueArt emoji={venue.emoji} tone={venue.tone} className="h-32" size="lg" />
+            )}
             <div className="p-5">
               <div className="flex items-center gap-1.5 text-xs font-semibold text-muted">{venue.category} · {venue.area} {venue.verified && <><ShieldCheck size={13} className="text-sage" /> Verified venue</>}</div>
               <div className="mt-1 font-display text-[24px] leading-tight">{venue.name}</div>
@@ -185,6 +191,8 @@ export default function ProposalPage() {
               {p.note && <p className="mt-4 border-l-2 border-ember pl-3 font-display text-[16px] italic leading-snug text-ink-soft">“{p.note}”</p>}
             </div>
           </div>
+
+          <VenueDetailsToggle venue={venue} showPrices={false} />
 
           {receiverFirstReply && p.myTurn && (
             <Card className="p-5">

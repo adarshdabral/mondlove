@@ -5,12 +5,13 @@ import { Activity, AlertTriangle, Ban, CalendarCheck, Check, CreditCard, Flag, G
 import { DashboardShell, Kpi, Panel, StatusPill, Table, type NavItem } from '../DashboardShell'
 import { AreaChart, BarChart, Donut, Funnel } from '../charts'
 import { Avatar } from '../Avatar'
-import { Chip, Pill } from '../ui'
+import { Button, Chip, Modal, Pill } from '../ui'
+import { VenueDetails } from '../VenueDetails'
 import { PageLoader } from '../shared'
 import { api, errorMessage } from '../../lib/api'
 import { inr } from '../../lib/constants'
 import { useSession, useToast } from '../../lib/session'
-import type { AvatarConfig } from '../../lib/types'
+import type { AvatarConfig, Package, Venue } from '../../lib/types'
 
 const num = (n: number) => n.toLocaleString('en-IN')
 const ago = (d: string) => {
@@ -54,6 +55,7 @@ export function AdminDashboard() {
   const [bookings, setBookings] = useState<BookingRow[]>([])
   const [blocks, setBlocks] = useState<{ total: number; perDay: { _id: number; n: number }[] } | null>(null)
   const [filter, setFilter] = useState<'All' | 'Open' | 'High'>('All')
+  const [review, setReview] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -120,6 +122,7 @@ export function AdminDashboard() {
       user={{ name: user?.name ?? '', initials, role: 'Platform admin' }}
       accent="ink"
       onLogout={logout}
+      logoutTo="/login"
     >
       {tab === 'overview' && (
         <div className="space-y-5 animate-fade-in">
@@ -203,7 +206,7 @@ export function AdminDashboard() {
           <Panel title={<span className="flex items-center gap-2"><Store size={17} /> Business verification</span>}>
             <Table head={['Business', 'Type', 'Area', 'Documents', '']} rows={pendingVenues.map((v) => [
               <span className="font-semibold">{v.name}</span>, v.kind, v.area, v.documents.join(', ') || '—',
-              <button onClick={() => run(() => api(`/admin/venues/${v.id}/verify`, { body: { approve: true } }), `${v.name} is live`)} className="text-[12px] font-semibold text-sage cursor-pointer">Approve</button>,
+              <button onClick={() => setReview(v.id)} className="text-[12px] font-semibold text-sage cursor-pointer">Review listing</button>,
             ])} />
             {!pendingVenues.length && <div className="py-4 text-center text-sm text-muted">No venues waiting</div>}
           </Panel>
@@ -244,9 +247,12 @@ export function AdminDashboard() {
         <Panel title="Venues & providers" className="animate-fade-in">
           <Table head={['Venue', 'Type', 'Area', 'Plan', 'Status', '']} rows={venues.map((v) => [
             <span className="font-semibold">{v.name}{v.featured && <span className="ml-2 text-[11px] text-gold">★ Featured</span>}</span>, v.kind, v.area, v.plan, <StatusPill status={v.status === 'verified' ? 'Verified' : v.status === 'pending' ? 'Pending' : 'Suspended'} />,
-            v.status === 'verified'
-              ? <button onClick={() => run(() => api(`/admin/venues/${v.id}/verify`, { body: { approve: false } }), `${v.name} suspended`)} className="text-[12px] font-semibold text-red-600 cursor-pointer">Suspend</button>
-              : <button onClick={() => run(() => api(`/admin/venues/${v.id}/verify`, { body: { approve: true } }), `${v.name} is live`)} className="text-[12px] font-semibold text-sage cursor-pointer">Approve</button>,
+            <div className="flex gap-3 text-[12px] font-semibold">
+              <button onClick={() => setReview(v.id)} className="text-ink-soft cursor-pointer">Review</button>
+              {v.status === 'verified'
+                ? <button onClick={() => run(() => api(`/admin/venues/${v.id}/verify`, { body: { approve: false } }), `${v.name} suspended`)} className="text-red-600 cursor-pointer">Suspend</button>
+                : <button onClick={() => run(() => api(`/admin/venues/${v.id}/verify`, { body: { approve: true } }), `${v.name} is live`)} className="text-sage cursor-pointer">Approve</button>}
+            </div>,
           ])} />
         </Panel>
       )}
@@ -269,6 +275,44 @@ export function AdminDashboard() {
           </Panel>
         </div>
       )}
+      <VenueReview slug={review} onClose={() => setReview(null)} onDecide={async (approve) => { const slug = review!; setReview(null); await run(() => api(`/admin/venues/${slug}/verify`, { body: { approve } }), approve ? 'Venue approved and live' : 'Venue rejected') }} />
     </DashboardShell>
+  )
+}
+
+interface ReviewData {
+  venue: Venue & { status: string; submittedAt?: string; owner: { name: string; email: string } | null; phone?: string; licence?: { fssai?: string; gst?: string } }
+  packages: (Package & { active: boolean })[]
+}
+
+/** Full listing check before a venue goes live: photos, menu, facts, licences, packages. */
+function VenueReview({ slug, onClose, onDecide }: { slug: string | null; onClose: () => void; onDecide: (approve: boolean) => void }) {
+  const [data, setData] = useState<ReviewData | null>(null)
+  useEffect(() => {
+    setData(null)
+    if (slug) api<ReviewData>(`/admin/venues/${slug}`).then(setData).catch(() => {})
+  }, [slug])
+  if (!slug) return null
+  const v = data?.venue
+  return (
+    <Modal open onClose={onClose} title={v ? `Review: ${v.name}` : 'Loading…'} wide>
+      {v && data && (
+        <div className="space-y-5">
+          <div className="grid gap-2 rounded-2xl bg-sand/60 p-4 text-[13px] sm:grid-cols-2">
+            <div><span className="text-muted">Owner:</span> {v.owner?.name} · {v.owner?.email}</div>
+            <div><span className="text-muted">Phone:</span> {v.phone || '—'}</div>
+            <div><span className="text-muted">FSSAI:</span> <span className="font-mono">{v.licence?.fssai || '—'}</span></div>
+            <div><span className="text-muted">GSTIN:</span> <span className="font-mono">{v.licence?.gst || '—'}</span></div>
+            <div><span className="text-muted">Status:</span> {v.status}{v.submittedAt && ` · submitted ${new Date(v.submittedAt).toLocaleDateString('en-IN')}`}</div>
+            <div><span className="text-muted">Packages:</span> {data.packages.map((p) => `${p.name} (${inr(p.price)})`).join(', ') || '—'}</div>
+          </div>
+          <VenueDetails venue={{ ...v, packages: data.packages, rating: 0, reviews: 0, verified: v.status === 'verified', emoji: v.kind === 'activity' ? '🎨' : '☕', tone: ['#FBEFD3', '#D9A23B'], ambience: v.ambience ?? [], treats: v.treats ?? [], slots: v.slots ?? [] }} />
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button variant="danger" onClick={() => onDecide(false)}>Reject</Button>
+            <Button variant="dark" onClick={() => onDecide(true)}>Approve &amp; publish</Button>
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }
