@@ -25,6 +25,7 @@ export function DashboardShell({
   children,
   accent = 'ember',
   onLogout,
+  logoutTo = '/',
 }: {
   title: string
   subtitle: string
@@ -36,6 +37,8 @@ export function DashboardShell({
   children: ReactNode
   accent?: 'ember' | 'plum' | 'ink'
   onLogout?: () => Promise<void>
+  /** Where to land after logging out; should match the role gate's sign-in page to avoid racing it. */
+  logoutTo?: string
 }) {
   const router = useRouter()
   const activeCls = { ember: 'bg-ember-soft text-ember-dark', plum: 'bg-plum-soft text-plum', ink: 'bg-ink text-white' }[accent]
@@ -69,7 +72,7 @@ export function DashboardShell({
             <div className="truncate text-[11px] text-muted">{user.role}</div>
           </div>
           {onLogout && (
-            <button aria-label="Log out" onClick={async () => { await onLogout(); router.replace('/') }} className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-white hover:text-ink cursor-pointer">
+            <button aria-label="Log out" onClick={async () => { await onLogout(); router.replace(logoutTo) }} className="grid h-8 w-8 place-items-center rounded-full text-muted hover:bg-white hover:text-ink cursor-pointer">
               <LogOut size={15} />
             </button>
           )}
@@ -88,7 +91,7 @@ export function DashboardShell({
             </div>
             <Link href="/" className="hidden text-[13px] font-semibold text-muted hover:text-ink sm:block">mingleo.app</Link>
             {onLogout && (
-              <button aria-label="Log out" onClick={async () => { await onLogout(); router.replace('/') }} className="grid h-10 w-10 place-items-center rounded-full border border-line bg-white md:hidden cursor-pointer"><LogOut size={16} /></button>
+              <button aria-label="Log out" onClick={async () => { await onLogout(); router.replace(logoutTo) }} className="grid h-10 w-10 place-items-center rounded-full border border-line bg-white md:hidden cursor-pointer"><LogOut size={16} /></button>
             )}
           </div>
           <div className="flex gap-1 overflow-x-auto px-4 pb-3 no-scrollbar md:hidden">

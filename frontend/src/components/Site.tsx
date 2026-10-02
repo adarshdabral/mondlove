@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Menu, X } from 'lucide-react'
+import { Menu, Store, X } from 'lucide-react'
 import { useSession } from '../lib/session'
 import { Logo } from './ui'
 
@@ -11,7 +11,6 @@ const LINKS = [
   ['Date ideas', '/#doon'],
   ['For couples', '/#couples'],
   ['Safety', '/#safety'],
-  ['For venues', '/partners'],
 ]
 
 export function SiteHeader({ dark = false }: { dark?: boolean }) {
@@ -28,6 +27,11 @@ export function SiteHeader({ dark = false }: { dark?: boolean }) {
           ))}
         </nav>
         <div className="hidden items-center gap-2 md:flex">
+          {!home && (
+            <Link href="/partners" className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold ${dark ? 'border-white/20 text-white hover:bg-white/10' : 'border-line bg-white/70 text-ink hover:border-ink/30'}`}>
+              <Store size={15} /> For business
+            </Link>
+          )}
           {home ? (
             <Link href={home} className="inline-flex h-10 items-center rounded-full bg-ember px-5 text-sm font-semibold text-white hover:bg-ember-dark">Open Mingleo</Link>
           ) : (
@@ -51,6 +55,13 @@ export function SiteHeader({ dark = false }: { dark?: boolean }) {
               <>
                 <Link href="/login" className="inline-flex h-11 items-center justify-center rounded-full border border-line bg-white text-sm font-semibold text-ink">Log in</Link>
                 <Link href="/signup" className="inline-flex h-11 items-center justify-center rounded-full bg-ember text-sm font-semibold text-white">Get started</Link>
+                <div className="col-span-2 mt-3 rounded-2xl bg-sand/70 p-3">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted">Café or activity owner?</div>
+                  <div className="mt-2 grid grid-cols-2 gap-2">
+                    <Link href="/partners#join" onClick={() => setOpen(false)} className="inline-flex h-10 items-center justify-center rounded-full bg-ink text-[13px] font-semibold text-white">Register venue</Link>
+                    <Link href="/partners/login" onClick={() => setOpen(false)} className="inline-flex h-10 items-center justify-center rounded-full border border-line bg-white text-[13px] font-semibold text-ink">Partner login</Link>
+                  </div>
+                </div>
               </>
             )}
           </div>
@@ -70,7 +81,7 @@ export function SiteFooter() {
         </div>
         {[
           ['Product', [['How it works', '/#how'], ['For couples', '/#couples'], ['Safety', '/#safety'], ['FAQ', '/#faq']]],
-          ['Business', [['List your venue', '/partners'], ['Partner login', '/login'], ['Business model', '/business']]],
+          ['For business', [['Register your venue', '/partners#join'], ['Partner login', '/partners/login'], ['Business model', '/business']]],
           ['Company', [['Support', 'mailto:support@mingleo.app'], ['Safety team', 'mailto:safety@mingleo.app'], ['Privacy', '/privacy'], ['Terms', '/terms']]],
         ].map(([title, links]) => (
           <div key={title as string}>

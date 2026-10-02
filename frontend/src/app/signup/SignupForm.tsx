@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, CalendarHeart, Heart, Sparkles } from 'lucide-react'
+import { ArrowRight, CalendarHeart, Heart, Sparkles, Store } from 'lucide-react'
 import { api, errorMessage } from '@/lib/api'
 import { useSession } from '@/lib/session'
 import type { Me } from '@/lib/types'
@@ -40,8 +40,21 @@ export function SignupForm({ initialIntent }: { initialIntent?: Intent }) {
             <ArrowRight size={18} className="text-muted transition group-hover:translate-x-1" />
           </button>
         ))}
+        <div className="flex items-center gap-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-muted">
+          <span className="h-px flex-1 bg-line" /> For businesses <span className="h-px flex-1 bg-line" />
+        </div>
+        <Link href="/partners#join" className="group flex w-full items-center gap-4 rounded-3xl border border-dashed border-ink/20 bg-white/60 p-5 text-left transition hover:border-ink/40 hover:bg-white">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-ink text-white"><Store size={22} /></span>
+          <span className="flex-1">
+            <span className="block text-[16px] font-semibold">I own a café, restaurant or activity</span>
+            <span className="block text-[13px] text-muted">Register your venue and get booked for dates.</span>
+          </span>
+          <ArrowRight size={18} className="text-muted transition group-hover:translate-x-1" />
+        </Link>
         <p className="pt-4 text-center text-sm text-ink-soft">
           Already have an account? <Link href="/login" className="font-semibold text-ember">Log in</Link>
+          <span className="mx-2 text-line">·</span>
+          <Link href="/partners/login" className="font-semibold text-ink-soft hover:text-ink">Partner login</Link>
         </p>
       </div>
     )

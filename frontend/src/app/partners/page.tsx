@@ -3,7 +3,7 @@ import { BarChart3, CalendarClock, IndianRupee, Package, Percent, Sparkles } fro
 import { SiteFooter, SiteHeader } from '@/components/Site'
 import { PartnerSignup } from './PartnerSignup'
 
-export const metadata: Metadata = { title: 'List your venue' }
+export const metadata: Metadata = { title: 'Mingleo for venues: register or log in' }
 
 export default function PartnersPage() {
   return (
@@ -15,6 +15,10 @@ export default function PartnersPage() {
           <div>
             <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-ember">Mingleo for Dehradun venues</div>
             <h1 className="mt-3 font-display text-[42px] leading-[1.05] md:text-[58px]">Become the place where Doon&apos;s first dates happen.</h1>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <a href="#join" className="inline-flex h-11 items-center rounded-full bg-ink px-5 text-sm font-semibold text-white hover:bg-ink-soft">Register your venue</a>
+              <a href="/partners/login" className="inline-flex h-11 items-center rounded-full border border-line bg-white px-5 text-sm font-semibold hover:border-ink/30">Partner login</a>
+            </div>
             <p className="mt-5 max-w-xl text-[17px] text-ink-soft">We&apos;re launching in Dehradun with the city&apos;s students and young professionals. Cafés, momo spots, restaurants and experience studios get booked straight from date proposals, Date Lab itineraries and couples&apos; surprises.</p>
             <div className="mt-10 grid gap-4 sm:grid-cols-2">
               {[

@@ -11,7 +11,7 @@ export function RoleGate({ role, children }: { role: 'partner' | 'admin'; childr
   const router = useRouter()
   useEffect(() => {
     if (loading) return
-    if (!user) router.replace('/login')
+    if (!user) router.replace(role === 'partner' ? '/partners/login' : '/login')
     else if (user.role !== role) router.replace(user.role === 'partner' ? '/partner' : user.role === 'admin' ? '/admin' : '/app')
   }, [user, loading, role, router])
   if (loading || user?.role !== role) return <PageLoader />
